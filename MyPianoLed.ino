@@ -5,7 +5,6 @@
 #define LED_TYPE NEOPIXEL
 #define NUM_STRIPS 1
 #define NUM_PIANO_KEYS 14
-#define NUM_LED_TUBES 14
 #define NUM_LEDS_PER_STRIP_USED 330
 
 wavTrigger wTrig;
@@ -16,9 +15,10 @@ const unsigned long keySampleIntervalMs = 25;
 byte prevKeyStates[NUM_PIANO_KEYS];
 long longKeyPressCounts[NUM_PIANO_KEYS];
 long longKeyPressCountMax = 80; // 80 * 25 = 2000 ms
-int pianoStartIndexes[NUM_PIANO_KEYS] = {0，15, 33, 52, 73, 94, 118, 142, 166, 190, 217, 244, 271, 301} ； int pianoEndIndexes[NUM_PIANO_KEYS] = {14, 32, 51, 72, 93, 117, 141, 165, 189, 218, 243, 270, 300, 330} ；
+int pianoStartIndexes[NUM_PIANO_KEYS] = {0, 15, 33, 52, 73, 94, 118, 142, 166, 190, 217, 244, 271, 301};
+int pianoEndIndexes[NUM_PIANO_KEYS] = {14, 32, 51, 72, 93, 117, 141, 165, 189, 218, 243, 270, 300, 330};
 
-    unsigned long letGoTime = 0;
+unsigned long letGoTime = 0;
 
 // Set up memory block (an array) for storing and manipulating (to set/clear) LED data:
 CRGB ledArray[NUM_LEDS_PER_STRIP_USED];
@@ -41,29 +41,13 @@ void setup()
 
   //  // Tell FastLED there's 60 NEOPIXEL leds on OUT_PIN
   FastLED.addLeds<LED_TYPE, 22>(ledArray, NUM_LEDS_PER_STRIP_USED);
-  // FastLED.addLeds<LED_TYPE, 26>(leds[1], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 30>(leds[2], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 28>(leds[3], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 30>(leds[4], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 32>(leds[5], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 34>(leds[6], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 36>(leds[7], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 38>(leds[8], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 40>(leds[9], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 42>(leds[10], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 44>(leds[11], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 46>(leds[12], NUM_LEDS_PER_STRIP);
-  // FastLED.addLeds<LED_TYPE, 48>(leds[13], NUM_LEDS_PER_STRIP);
-  // delay(2000);
-  // FastLED.setBrightness(255);
   FastLED.clear();
 
   // Start the wav trigger
   wTrig.start();
-  // Send a stop-all command and reset the sample-rate offset, in case we have
-  //  reset while the WAV Trigger was already playing.
   wTrig.stopAllTracks();
   wTrig.samplerateOffset(0);
+  
 } // end of setup
 
 void loop()
@@ -101,10 +85,10 @@ void loop()
       }
       else
       {
-        fadeKeyColour(pianoStartIndexes[i], pianoEndIndexes[i])
-            // SCREENSAVER:
-            // After 2s of no presses, hue++ to do a passive rainbow pattern:
-            if (millis() > letGoTime + 2000)
+        fadeKeyColour(pianoStartIndexes[i], pianoEndIndexes[i]);
+        // SCREENSAVER:
+        // After 2s of no presses, hue++ to do a passive rainbow pattern:
+        if (millis() > letGoTime + 2000)
         {
           if (!rainbowMessageShown)
           {
@@ -168,13 +152,13 @@ void showKeyColour(int keyPressed)
 {
   // PRESS BUTTON:
   // Each strip LED will be filled with a different starting hue
-  int startIndex = pianoStartIndexes[i];
-  int endIndex = pianoEndIndexes[i];
+  int startIndex = pianoStartIndexes[keyPressed];
+  int endIndex = pianoEndIndexes[keyPressed];
   for (int i = startIndex; i < endIndex; i++)
   {
     // +hue for a different base hue every time
     //leds[i][j] = CHSV( i*36+(j/2), 255, 255);  // Don't really need fill_solid() if "number_of_leds == 1"
-    hsv2rgb_spectrum(CHSV((keyPressed)*36 + (j / 2), 255, 255), leds[i]);
+    hsv2rgb_spectrum(CHSV((keyPressed)*36 + (i / 2), 255, 255), ledArray[i]);
     // fill_solid( &(leds[i][j]), 1, CHSV( i*36+(j/2), 255, 255) );
     // fill_solid( &(leds[i][j]), 1, CRGB( 255, 255, 255) ); // All white for current testing
   }
@@ -188,7 +172,7 @@ void showOctavesColour(int keyPressed)
   int endIndex = pianoEndIndexes[keyPressed];
   for (int i = startIndex; i < endIndex; i++)
   {
-    hsv2rgb_spectrum(CHSV((keyPressed)*36 + (j / 2), 255, 255), leds[i]);
+    hsv2rgb_spectrum(CHSV((keyPressed)*36 + (i / 2), 255, 255), ledArray[i]);
   }
   if (keyPressed >= 6)
   {
@@ -202,7 +186,7 @@ void showOctavesColour(int keyPressed)
   endIndex = pianoEndIndexes[keyPressed];
   for (int i = startIndex; i < endIndex; i++)
   {
-    hsv2rgb_spectrum(CHSV((keyPressed)*36 + (j / 2), 255, 255), leds[i]);
+    hsv2rgb_spectrum(CHSV((keyPressed)*36 + (i / 2), 255, 255), ledArray[i]);
   }
 }
 
@@ -213,6 +197,6 @@ void fadeKeyColour(int startIndex, int endIndex)
   // Larger fraction = slower fade
   for (int i = startIndex; i < endIndex; i++)
   {
-    leds[i].nscale8(192);
+    ledArray[i].nscale8(192);
   }
 }
