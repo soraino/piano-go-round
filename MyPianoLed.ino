@@ -11,6 +11,13 @@ wavTrigger wTrig;
 unsigned long keyPrevMillis = 0;
 const unsigned long keySampleIntervalMs = 25;
 
+// for analog pulsing LED
+unsigned long ledUpdateMillis = 0;
+int ledUpdateInterval = 20; // milliseconds
+int ledFadeValue = 0; // current brightness of analog leds
+byte ledDutyCycle = 223; // Max brightness of analog leds, range [0,255]
+boolean isFadingUp = true;
+
 // CREATE THESE ARRAYS AND buttonStates[] ACCORDING TO NUM_PIANO_KEYS
 byte prevKeyStates[NUM_PIANO_KEYS];
 long longKeyPressCounts[NUM_PIANO_KEYS];
@@ -38,6 +45,8 @@ void setup()
     longKeyPressCounts[i] = 0;
     pinMode(i, INPUT_PULLUP);
   }
+  //for breathing/pulsing analog LED
+  pinMode(44, OUTPUT);
 
   //  // Tell FastLED there's 60 NEOPIXEL leds on OUT_PIN
   FastLED.addLeds<LED_TYPE, 22>(ledArray, NUM_LEDS_PER_STRIP_USED);
@@ -47,12 +56,44 @@ void setup()
   wTrig.start();
   wTrig.stopAllTracks();
   wTrig.samplerateOffset(0);
-  
+
 } // end of setup
 
 void loop()
 {
   wTrig.masterGain(1);
+  // For breathing/pulsing analog LED without for loops
+  if (millis() >ledUpdateMillis + ledUpdateInterval)
+  {
+    ledUpdateMillis = millis();
+    if (isFadingUp) 
+    {
+      if (ledFadeValue <= ledDutyCycle) 
+      {
+        analogWrite(44, ledFadeValue);
+        ledFadeValue = (ledFadeValue+1) * 1.1;
+        if (ledFadeValue >= ledDutyCycle) 
+        {
+          ledFadeValue = ledDutyCycle;
+          isFadingUp = false;
+        }
+      }
+    }
+    else // fading down to 0
+    {
+      if (ledFadeValue >= 0) 
+      {
+        analogWrite(44, ledFadeValue);
+        ledFadeValue = (ledFadeValue/1.1) - 1;
+        if (ledFadeValue <= 0) 
+        {
+          ledFadeValue = 0;
+          isFadingUp = true;
+        }
+      }
+    }
+  } // end of pulsing analog LED
+
   if (millis() >= keyPrevMillis + keySampleIntervalMs)
   {
     keyPrevMillis = millis();
@@ -122,7 +163,8 @@ void rainbowShift()
 {
   for (int i = 0; i < NUM_LEDS_PER_STRIP_USED; i++)
   {
-    ledArray[i] = CHSV(hue / 3 + (i), 255, 80);
+    
+    ledArray[i] = CHSV(hue/3+i, 255, 80);
   }
   // hue++ makes colours animate "downwards" to [0] pixel, while
   // hue-- makes colours animates "upwards" from [0] pixel.
